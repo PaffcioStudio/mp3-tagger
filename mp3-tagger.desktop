@@ -1,0 +1,16 @@
+[Desktop Entry]
+Name=MP3 Tagger
+GenericName=Audio Tag Editor
+GenericName[pl]=Edytor tagów audio
+Comment=Edit audio file ID3 tags
+Comment[pl]=Edytuj tagi ID3 w plikach audio
+Exec=mp3-tagger %F
+Icon=mp3-tagger
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;AudioVideoEditing;
+MimeType=audio/mpeg;audio/mp3;audio/flac;audio/ogg;audio/x-flac;audio/aac;audio/m4a;audio/mp4;audio/x-m4a;audio/wav;audio/x-wav;audio/wma;audio/x-ms-wma;
+Keywords=mp3;tag;metadata;audio;id3;music;flac;ogg;
+Keywords[pl]=mp3;tag;metadane;audio;id3;muzyka;flac;ogg;
+StartupWMClass=MP3 Tagger
+StartupNotify=true

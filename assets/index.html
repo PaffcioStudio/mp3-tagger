@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file: https:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline';">
+    <title>Zaawansowany Edytor Tagów MP3</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Nagłówek -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-music"></i>
+                <h1>Edytor Tagów MP3</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="selectFiles">
+                    <i class="fas fa-folder-open"></i> Wybierz pliki
+                </button>
+                <button class="btn btn-warning" id="discardChanges" disabled>
+                    <i class="fas fa-undo"></i> Cofnij zmiany
+                </button>
+                <button class="btn btn-success" id="saveTags" disabled>
+                    <i class="fas fa-save"></i> Zapisz tagi
+                </button>
+                <button class="btn btn-success" id="saveAllTags" disabled style="position:relative">
+                    <i class="fas fa-save"></i> Zapisz wszystko
+                    <span class="save-all-badge" id="saveAllBadge" style="display:none"></span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Lewy panel - lista plików -->
+            <div class="file-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-file-audio"></i> Wybrane utwory</h3>
+                    <button class="btn btn-small" id="clearList">
+                        <i class="fas fa-trash"></i> Wyczyść
+                    </button>
+                </div>
+                
+                <!-- Wyszukiwarka -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Szukaj utworów...">
+                        <button class="btn-search-clear" id="clearSearch" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="file-list" id="fileList">
+                    <div class="empty-state">
+                        <i class="fas fa-music"></i>
+                        <p>Wybierz pliki MP3 aby rozpocząć</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Główny panel - edycja tagów -->
+            <div class="editor-panel">
+                <div class="tabs">
+                    <button class="tab active" data-tab="basic">
+                        <i class="fas fa-info-circle"></i> Podstawowe
+                    </button>
+                    <button class="tab" data-tab="advanced">
+                        <i class="fas fa-cog"></i> Zaawansowane
+                    </button>
+                    <button class="tab" data-tab="genres">
+                        <i class="fas fa-tags"></i> Gatunki
+                    </button>
+                    <button class="tab" data-tab="cover">
+                        <i class="fas fa-image"></i> Okładka
+                    </button>
+                    <button class="tab" data-tab="batch">
+                        <i class="fas fa-layer-group"></i> Masowa edycja
+                    </button>
+                </div>
+
+                <!-- Zakładka podstawowa -->
+                <div class="tab-content active" id="basic-tab">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="title"><i class="fas fa-heading"></i> Tytuł utworu</label>
+                            <input type="text" id="title" placeholder="Wpisz tytuł utworu">
+                        </div>
+                        <div class="form-group">
+                            <label for="artist"><i class="fas fa-user"></i> Wykonawca</label>
+                            <input type="text" id="artist" placeholder="Wpisz wykonawcę">
+                        </div>
+                        <div class="form-group">
+                            <label for="album"><i class="fas fa-compact-disc"></i> Album</label>
+                            <input type="text" id="album" placeholder="Wpisz nazwę albumu">
+                        </div>
+                        <div class="form-group">
+                            <label for="year"><i class="fas fa-calendar"></i> Rok wydania</label>
+                            <input type="number" id="year" placeholder="RRRR" min="1900" max="2100">
+                        </div>
+                        <div class="form-group">
+                            <label for="trackNumber"><i class="fas fa-list-ol"></i> Numer utworu</label>
+                            <input type="text" id="trackNumber" placeholder="np. 01, 02">
+                        </div>
+                        <div class="form-group">
+                            <label for="genre"><i class="fas fa-guitar"></i> Główny gatunek</label>
+                            <input type="text" id="genre" placeholder="Wybierz z listy lub wpisz" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zakładka zaawansowana -->
+                <div class="tab-content" id="advanced-tab">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="composer"><i class="fas fa-music"></i> Kompozytor</label>
+                            <input type="text" id="composer" placeholder="Wpisz kompozytora">
+                        </div>
+                        <div class="form-group">
+                            <label for="performerInfo"><i class="fas fa-user-tie"></i> Dodatkowy wykonawca</label>
+                            <input type="text" id="performerInfo" placeholder="Dodatkowe informacje o wykonawcy">
+                        </div>
+                        <div class="form-group">
+                            <label for="audioSourceUrl"><i class="fas fa-link"></i> Źródło audio</label>
+                            <input type="text" id="audioSourceUrl" placeholder="URL źródła (np. suno.com)" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="partOfSet"><i class="fas fa-layer-group"></i> Numer płyty</label>
+                            <input type="text" id="partOfSet" placeholder="np. 1/2 dla płyty 1 z 2">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="lyrics"><i class="fas fa-file-alt"></i> Tekst utworu</label>
+                            <textarea id="lyrics" rows="6" placeholder="Wpisz tekst utworu..."></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="comment"><i class="fas fa-comment"></i> Komentarz</label>
+                            <textarea id="comment" rows="4" placeholder="Dodaj komentarz..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zakładka gatunków -->
+                <div class="tab-content" id="genres-tab">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="fullGenres"><i class="fas fa-tags"></i> Wszystkie gatunki (oddziel przecinkami)</label>
+                            <textarea id="fullGenres" rows="4" placeholder="np. Pop, Christmas, Gospel, 20th Century"></textarea>
+                            <small class="hint">Wpisz gatunki oddzielone przecinkami. Pierwszy gatunek będzie głównym. Użyj przycisków poniżej, aby szybko dodać popularne gatunki.</small>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Szybkie gatunki:</label>
+                            <div class="quick-genres" id="quickGenres">
+                                <!-- Gatunki będą dodane dynamicznie przez JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zakładka okładki -->
+                <div class="tab-content" id="cover-tab">
+                    <div class="cover-section">
+                        <div class="cover-preview-large">
+                            <div class="cover-placeholder" id="coverPlaceholder">
+                                <i class="fas fa-image"></i>
+                                <p>Brak okładki</p>
+                            </div>
+                            <img id="coverImage" class="hidden" alt="Okładka albumu">
+                        </div>
+                        <div class="cover-controls">
+                            <button class="btn btn-primary" id="selectCover">
+                                <i class="fas fa-folder-open"></i> Wybierz obraz
+                            </button>
+                            <button class="btn btn-danger" id="removeCover">
+                                <i class="fas fa-trash"></i> Usuń okładkę
+                            </button>
+                            <button class="btn btn-info" id="viewCover">
+                                <i class="fas fa-expand"></i> Powiększ
+                            </button>
+                            <button class="btn btn-secondary" id="exportCover" disabled>
+                                <i class="fas fa-download"></i> Eksportuj okładkę
+                            </button>
+                        </div>
+                        <div class="cover-info">
+                            <p class="info-text">
+                                <i class="fas fa-info-circle"></i>
+                                Obsługiwane formaty: JPG, PNG, GIF, BMP, WebP (max 10 MB)
+                            </p>
+                            <p class="info-text">
+                                <i class="fas fa-lightbulb"></i>
+                                Zalecany rozmiar: min. 300x300 pikseli
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zakładka masowej edycji -->
+                <div class="tab-content" id="batch-tab">
+                    <div class="batch-editor">
+                        <h3><i class="fas fa-copy"></i> Zastosuj do wszystkich wybranych</h3>
+                        <p class="batch-description">Wypełnij pola, które chcesz zastosować do wszystkich plików. Puste pola zostaną pominięte.</p>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="batch-artist"><i class="fas fa-user"></i> Wykonawca</label>
+                                <input type="text" id="batch-artist" placeholder="Zastąp wykonawcę">
+                            </div>
+                            <div class="form-group">
+                                <label for="batch-album"><i class="fas fa-compact-disc"></i> Album</label>
+                                <input type="text" id="batch-album" placeholder="Zastąp album">
+                            </div>
+                            <div class="form-group">
+                                <label for="batch-genre"><i class="fas fa-guitar"></i> Gatunek</label>
+                                <input type="text" id="batch-genre" placeholder="Zastąp gatunek" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="batch-year"><i class="fas fa-calendar"></i> Rok</label>
+                                <input type="number" id="batch-year" placeholder="Zastąp rok" min="1900" max="2100">
+                            </div>
+                            <div class="form-group">
+                                <label for="batch-composer"><i class="fas fa-music"></i> Kompozytor</label>
+                                <input type="text" id="batch-composer" placeholder="Zastąp kompozytora">
+                            </div>
+                            <div class="form-group">
+                                <label for="batch-performerInfo"><i class="fas fa-user-tie"></i> Dodatkowy wykonawca</label>
+                                <input type="text" id="batch-performerInfo" placeholder="Zastąp dodatkowego wykonawcę">
+                            </div>
+                            <div class="form-group">
+                                <label for="batch-audioSourceUrl"><i class="fas fa-link"></i> Źródło audio</label>
+                                <input type="text" id="batch-audioSourceUrl" placeholder="Zastąp źródło audio" autocomplete="off">
+                            </div>
+                        </div>
+                        <button class="btn btn-warning btn-large" id="applyBatch">
+                            <i class="fas fa-bolt"></i> Zastosuj zmiany do wszystkich plików
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stopka -->
+        <footer class="footer">
+            <div class="status-bar">
+                <span id="statusMessage">Gotowy do pracy</span>
+                <span id="fileCount">0 plików</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal z powiadomieniem -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Powiadomienie</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="modalClose">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal z powiększoną okładką -->
+    <div id="coverModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Okładka albumu</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <img id="fullCoverImage" class="full-cover" alt="Pełna okładka">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="coverModalClose">Zamknij</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast powiadomienia -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="genres.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html>

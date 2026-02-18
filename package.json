@@ -1,0 +1,127 @@
+{
+  "name": "mp3-tagger",
+  "version": "1.0.1",
+  "description": "Zaawansowany edytor tagów MP3 z polskim interfejsem",
+  "homepage": "https://github.com/PaffcioStudio/mp3-tagger",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox",
+    "build": "electron-builder --linux",
+    "build:linux": "electron-builder --linux",
+    "build:win": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "keywords": [
+    "mp3",
+    "tag",
+    "metadata",
+    "audio",
+    "id3",
+    "music",
+    "editor"
+  ],
+  "author": {
+    "name": "Paweł Potrykus (Paffcio)",
+    "url": "https://github.com/PaffcioStudio/mp3-tagger"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "node-id3": "^0.2.6"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.mp3tagger.app",
+    "productName": "MP3 Tagger",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "snap",
+        "tar.gz"
+      ],
+      "category": "AudioVideo",
+      "icon": "build/icons",
+      "synopsis": "Zaawansowany edytor tagów MP3",
+      "description": "Nowoczesna aplikacja do zarządzania tagami ID3 w plikach MP3",
+      "maintainer": "Paweł Potrykus <https://github.com/PaffcioStudio>",
+      "executableName": "mp3-tagger",
+      "executableArgs": [
+        "--no-sandbox"
+      ],
+      "desktop": {
+        "Icon": "mp3-tagger",
+        "Name": "MP3 Tagger",
+        "Type": "Application",
+        "Categories": "AudioVideo;Audio;AudioVideoEditing;",
+        "MimeType": "audio/mpeg;audio/mp3;audio/flac;audio/ogg;audio/x-flac;audio/aac;audio/m4a;audio/mp4;audio/x-m4a;audio/wav;audio/x-wav;audio/wma;audio/x-ms-wma;",
+        "StartupWMClass": "MP3 Tagger"
+      }
+    },
+    "deb": {
+      "depends": [
+        "libnotify4",
+        "libxtst6",
+        "libnss3"
+      ],
+      "fpm": [
+        "--license",
+        "MIT",
+        "--vendor",
+        "Paweł Potrykus (Paffcio)",
+        "--url",
+        "https://github.com/PaffcioStudio/mp3-tagger"
+      ]
+    },
+    "snap": {
+      "grade": "stable",
+      "confinement": "classic"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.music",
+      "icon": "build/icon.icns"
+    },
+    "extraResources": [
+      {
+        "from": "build/icons",
+        "to": "icons",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "copyright": "Copyright © 2025 Paweł Potrykus (Paffcio)"
+  },
+  "bugs": {
+    "url": "https://github.com/PaffcioStudio/mp3-tagger/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PaffcioStudio/mp3-tagger.git"
+  }
+}

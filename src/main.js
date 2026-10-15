@@ -27,7 +27,9 @@ async function createWindow() {
     let appIcon = null;
     
     try {
-        const iconPath = path.join(__dirname, '../build/icon.png');
+        const iconPath = app.isPackaged
+            ? path.join(process.resourcesPath, 'icons/512x512.png')
+            : path.join(__dirname, '../build/icon.png');
         if (fsSync.existsSync(iconPath)) {
             appIcon = nativeImage.createFromPath(iconPath);
             if (appIcon.isEmpty()) appIcon = null;
@@ -92,7 +94,7 @@ if (process.platform === 'linux') {
     app.commandLine.appendSwitch('no-sandbox');
 }
 
-// Single instance lock — gdy aplikacja już działa i użytkownik otwiera kolejny plik
+// Single instance lock - gdy aplikacja już działa i użytkownik otwiera kolejny plik
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -128,7 +130,7 @@ const startApp = async () => {
     }
 };
 
-startApp();
+if (gotTheLock) startApp();
 
 app.on('window-all-closed', () => {
     globalShortcut.unregisterAll();
@@ -150,3 +152,4 @@ app.on('will-quit', () => {
 // ===== IPC HANDLERS =====
 require('./handlers/file-handlers')(ipcMain, dialog, mainWindow);
 require('./handlers/tag-handlers')(ipcMain, ID3, fs, path);
+require('./handlers/cover-search-handlers')(ipcMain);

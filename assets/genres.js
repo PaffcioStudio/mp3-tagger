@@ -1,10 +1,10 @@
 // ============================================================
-//  MP3 Tagger — baza danych podpowiedzi
+//  MP3 Tagger - baza danych podpowiedzi
 //  Plik ładowany przed renderer.js
 // ============================================================
 
 // -----------------------------------------------------------
-//  GATUNKI — ~300 pozycji
+//  GATUNKI - ~300 pozycji
 // -----------------------------------------------------------
 const ALL_GENRES = [
     // === Pop ===
@@ -130,7 +130,7 @@ const QUICK_GENRES = [
 ];
 
 // -----------------------------------------------------------
-//  ŹRÓDŁA AUDIO — popularne platformy do autouzupełniania
+//  ŹRÓDŁA AUDIO - popularne platformy do autouzupełniania
 // -----------------------------------------------------------
 const AUDIO_SOURCES = [
     "suno.com", "udio.com", "soundcloud.com", "bandcamp.com",
@@ -143,7 +143,7 @@ const AUDIO_SOURCES = [
 ];
 
 // -----------------------------------------------------------
-//  AUTOCOMPLETE — przewijalny dropdown zastępujący <datalist>
+//  AUTOCOMPLETE - przewijalny dropdown zastępujący <datalist>
 // -----------------------------------------------------------
 
 /**

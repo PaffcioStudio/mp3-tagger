@@ -22,7 +22,7 @@ module.exports = function(ipcMain, dialog, mainWindow) {
             const result = await dialog.showOpenDialog(win, {
                 properties: ['openFile', 'multiSelections'],
                 filters: [
-                    { name: 'Pliki audio', extensions: ['mp3', 'flac', 'ogg', 'aac', 'm4a', 'wav', 'wma'] },
+                    { name: 'Pliki MP3', extensions: ['mp3'] },
                     { name: 'Wszystkie pliki', extensions: ['*'] }
                 ]
             });
@@ -74,7 +74,7 @@ module.exports = function(ipcMain, dialog, mainWindow) {
     ipcMain.handle('save-cover-file', async (event, { base64Data, mimeType, defaultName }) => {
         try {
             const win = require('electron').BrowserWindow.getFocusedWindow();
-            const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/gif' ? 'gif' : mimeType === 'image/bmp' ? 'bmp' : 'jpg';
+            const ext = mimeType === 'image/webp' ? 'webp' : mimeType === 'image/png' ? 'png' : mimeType === 'image/gif' ? 'gif' : mimeType === 'image/bmp' ? 'bmp' : 'jpg';
             const result = await dialog.showSaveDialog(win, {
                 title: 'Eksportuj okładkę',
                 defaultPath: (defaultName || 'cover') + '.' + ext,

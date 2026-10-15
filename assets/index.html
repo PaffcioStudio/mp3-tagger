@@ -1,289 +1,543 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file: https:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline';">
-    <title>Zaawansowany Edytor Tagów MP3</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self';">
+    <title>MP3 Tagger</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Motyw przed pierwszym malowaniem (brak migotania)
+        (function () {
+            try {
+                var t = localStorage.getItem('mp3tagger:theme');
+                if (t === 'light' || t === 'dark') {
+                    document.documentElement.dataset.theme = t;
+                }
+            } catch (e) { /* brak dostępu do localStorage - zostaje domyślny ciemny */ }
+        })();
+    </script>
 </head>
 <body>
-    <div class="container">
-        <!-- Nagłówek -->
-        <header class="header">
-            <div class="logo">
-                <i class="fas fa-music"></i>
-                <h1>Edytor Tagów MP3</h1>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-primary" id="selectFiles">
-                    <i class="fas fa-folder-open"></i> Wybierz pliki
-                </button>
-                <button class="btn btn-warning" id="discardChanges" disabled>
-                    <i class="fas fa-undo"></i> Cofnij zmiany
-                </button>
-                <button class="btn btn-success" id="saveTags" disabled>
-                    <i class="fas fa-save"></i> Zapisz tagi
-                </button>
-                <button class="btn btn-success" id="saveAllTags" disabled style="position:relative">
-                    <i class="fas fa-save"></i> Zapisz wszystko
-                    <span class="save-all-badge" id="saveAllBadge" style="display:none"></span>
-                </button>
-            </div>
-        </header>
 
-        <div class="main-content">
-            <!-- Lewy panel - lista plików -->
-            <div class="file-panel">
-                <div class="panel-header">
-                    <h3><i class="fas fa-file-audio"></i> Wybrane utwory</h3>
-                    <button class="btn btn-small" id="clearList">
-                        <i class="fas fa-trash"></i> Wyczyść
+<!-- ===== SPRITE IKON SVG (wbudowane - działa offline, bez CDN) ===== -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-folder-open" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
+    <symbol id="i-save-all" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+    <symbol id="i-image-plus" viewBox="0 0 24 24"><path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+    <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 3v12"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+    <symbol id="i-type" viewBox="0 0 24 24"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24"><path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3l-2 18"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-loader" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+    <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></symbol>
+</svg>
+
+<div class="app" id="app">
+
+    <!-- ===== GÓRNY PASEK ===== -->
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-logo">
+                <svg class="icon"><use href="#i-music"/></svg>
+            </div>
+            <div class="brand-text">
+                <h1>MP3 Tagger</h1>
+                <span class="brand-sub">Edytor tagów ID3</span>
+            </div>
+            <span class="version-chip" id="versionChip">v1.2.0</span>
+        </div>
+
+        <div class="topbar-actions">
+            <button class="icon-btn" id="themeToggle" data-tip="Przełącz motyw (jasny / ciemny)" aria-label="Przełącz motyw">
+                <svg class="icon icon-sun"><use href="#i-sun"/></svg>
+                <svg class="icon icon-moon"><use href="#i-moon"/></svg>
+            </button>
+            <button class="icon-btn" id="shortcutsBtn" data-tip="Skróty klawiszowe" aria-label="Skróty klawiszowe">
+                <svg class="icon"><use href="#i-keyboard"/></svg>
+            </button>
+            <span class="topbar-divider" aria-hidden="true"></span>
+            <button class="btn btn-ghost" id="selectFiles">
+                <svg class="icon"><use href="#i-plus"/></svg>
+                <span class="btn-label">Dodaj pliki</span>
+            </button>
+            <button class="btn btn-subtle" id="discardChanges" disabled>
+                <svg class="icon"><use href="#i-undo"/></svg>
+                <span class="btn-label">Cofnij</span>
+            </button>
+            <button class="btn btn-primary" id="saveTags" disabled>
+                <svg class="icon"><use href="#i-save"/></svg>
+                <svg class="icon icon-spin btn-spinner"><use href="#i-loader"/></svg>
+                <span class="btn-label">Zapisz</span>
+            </button>
+            <button class="btn btn-primary-outline" id="saveAllTags" disabled>
+                <svg class="icon"><use href="#i-save-all"/></svg>
+                <svg class="icon icon-spin btn-spinner"><use href="#i-loader"/></svg>
+                <span class="btn-label">Zapisz wszystko</span>
+                <span class="count-badge" id="saveAllBadge" hidden>0</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="layout">
+
+        <!-- ===== LEWY PANEL: BIBLIOTEKA PLIKÓW ===== -->
+        <aside class="sidebar">
+            <div class="sidebar-head">
+                <div class="search-box">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" id="searchInput" placeholder="Szukaj utworów…" autocomplete="off" spellcheck="false">
+                    <button class="search-clear" id="clearSearch" hidden aria-label="Wyczyść wyszukiwanie">
+                        <svg class="icon"><use href="#i-x"/></svg>
                     </button>
                 </div>
-                
-                <!-- Wyszukiwarka -->
-                <div class="search-container">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="searchInput" placeholder="Szukaj utworów...">
-                        <button class="btn-search-clear" id="clearSearch" style="display: none;">
-                            <i class="fas fa-times"></i>
+            </div>
+
+            <div class="file-list" id="fileList" role="listbox" aria-label="Lista plików audio"></div>
+
+            <div class="sidebar-foot">
+                <span class="foot-count" id="fileCount">0 plików</span>
+                <button class="btn-link btn-link-danger" id="clearList">
+                    <svg class="icon"><use href="#i-trash"/></svg> Wyczyść
+                </button>
+            </div>
+        </aside>
+
+        <!-- ===== PANEL GŁÓWNY: EDYTOR ===== -->
+        <main class="editor">
+
+            <!-- Stan pusty - brak plików -->
+            <section class="empty-editor" id="emptyEditor">
+                <div class="empty-illustration" aria-hidden="true">
+                    <svg width="190" height="150" viewBox="0 0 190 150" fill="none">
+                        <circle cx="95" cy="72" r="52" fill="url(#eg1)" opacity=".55"/>
+                        <circle cx="152" cy="30" r="14" fill="url(#eg2)" opacity=".5"/>
+                        <circle cx="30" cy="112" r="9" fill="url(#eg2)" opacity=".4"/>
+                        <g stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M104 96V44l34-7v46" />
+                            <circle cx="96" cy="100" r="9" fill="var(--accent)" fill-opacity=".18"/>
+                            <circle cx="130" cy="91" r="9" fill="var(--accent)" fill-opacity=".18"/>
+                        </g>
+                        <g opacity=".9">
+                            <rect x="18" y="34" width="52" height="24" rx="12" fill="var(--bg-elev-2)" stroke="var(--border-strong)"/>
+                            <circle cx="30" cy="46" r="3" fill="var(--accent)"/>
+                            <rect x="38" y="43.5" width="24" height="5" rx="2.5" fill="var(--text-3)"/>
+                        </g>
+                        <g opacity=".7">
+                            <rect x="126" y="112" width="46" height="22" rx="11" fill="var(--bg-elev-2)" stroke="var(--border-strong)"/>
+                            <circle cx="137" cy="123" r="2.6" fill="var(--success)"/>
+                            <rect x="144" y="120.8" width="20" height="4.4" rx="2.2" fill="var(--text-3)"/>
+                        </g>
+                        <defs>
+                            <linearGradient id="eg1" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent-2)"/>
+                            </linearGradient>
+                            <linearGradient id="eg2" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stop-color="var(--accent-2)"/><stop offset="1" stop-color="var(--accent)"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h2>Dodaj pliki, aby zacząć</h2>
+                <p>Wybierz pliki audio z dysku albo przeciągnij je w dowolne miejsce okna.<br>Obsługiwany format: MP3.</p>
+                <button class="btn btn-primary btn-lg" id="emptySelectFiles">
+                    <svg class="icon"><use href="#i-folder-open"/></svg>
+                    <span class="btn-label">Wybierz pliki</span>
+                </button>
+                <p class="empty-hint">
+                    <svg class="icon"><use href="#i-info"/></svg>
+                    Wskazówka: w menedżerze plików kliknij utwór prawym przyciskiem → „Otwórz za pomocą” → MP3 Tagger.
+                </p>
+            </section>
+
+            <!-- Edytor - aktywny gdy wybrano plik -->
+            <section class="editor-inner" id="editorInner" hidden>
+                <!-- HERO: plik + okładka (zawsze widoczne) -->
+                <div class="hero">
+                    <div class="hero-cover" id="heroCover" role="button" tabindex="0" data-tip="Kliknij, aby powiększyć" aria-label="Powiększ okładkę">
+                        <div class="cover-placeholder" id="coverPlaceholder">
+                            <svg class="icon"><use href="#i-image"/></svg>
+                        </div>
+                        <img id="coverImage" alt="Okładka albumu" hidden>
+                        <span class="cover-zoom"><svg class="icon"><use href="#i-maximize"/></svg></span>
+                    </div>
+
+                    <div class="hero-body">
+                        <div class="hero-title-row">
+                            <h2 class="hero-title" id="heroTitle">-</h2>
+                            <span class="modified-pill" id="modifiedPill" hidden>
+                                <svg class="icon"><use href="#i-dot"/></svg> Niezapisane zmiany
+                            </span>
+                        </div>
+                        <p class="hero-meta" id="heroMeta">-</p>
+                        <p class="hero-file" id="heroFile" title="">-</p>
+                        <div class="hero-chips" id="heroChips"></div>
+                    </div>
+
+                    <div class="hero-actions">
+                        <button class="icon-btn icon-btn-accent" id="searchCoverOnline" data-tip="Wyszukaj okładkę w Internecie" aria-label="Wyszukaj okładkę w Internecie">
+                            <svg class="icon"><use href="#i-globe"/></svg>
+                        </button>
+                        <button class="icon-btn" id="selectCover" data-tip="Zmień okładkę (z dysku)" aria-label="Zmień okładkę z dysku">
+                            <svg class="icon"><use href="#i-image-plus"/></svg>
+                        </button>
+                        <button class="icon-btn" id="exportCover" data-tip="Eksportuj okładkę" aria-label="Eksportuj okładkę" disabled>
+                            <svg class="icon"><use href="#i-download"/></svg>
+                        </button>
+                        <button class="icon-btn icon-btn-danger" id="removeCover" data-tip="Usuń okładkę" aria-label="Usuń okładkę">
+                            <svg class="icon"><use href="#i-trash"/></svg>
+                        </button>
+                        <button class="icon-btn" id="openLocation" data-tip="Pokaż w folderze" aria-label="Pokaż plik w folderze">
+                            <svg class="icon"><use href="#i-external"/></svg>
                         </button>
                     </div>
                 </div>
-                
-                <div class="file-list" id="fileList">
-                    <div class="empty-state">
-                        <i class="fas fa-music"></i>
-                        <p>Wybierz pliki MP3 aby rozpocząć</p>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Główny panel - edycja tagów -->
-            <div class="editor-panel">
-                <div class="tabs">
-                    <button class="tab active" data-tab="basic">
-                        <i class="fas fa-info-circle"></i> Podstawowe
+                <!-- ZAKŁADKI -->
+                <nav class="tabs" role="tablist" aria-label="Sekcje edytora">
+                    <button class="tab active" data-tab="basic" role="tab" aria-selected="true">
+                        <svg class="icon"><use href="#i-list"/></svg> Podstawowe
                     </button>
-                    <button class="tab" data-tab="advanced">
-                        <i class="fas fa-cog"></i> Zaawansowane
+                    <button class="tab" data-tab="advanced" role="tab" aria-selected="false">
+                        <svg class="icon"><use href="#i-sliders"/></svg> Zaawansowane
                     </button>
-                    <button class="tab" data-tab="genres">
-                        <i class="fas fa-tags"></i> Gatunki
+                    <button class="tab" data-tab="genres" role="tab" aria-selected="false">
+                        <svg class="icon"><use href="#i-tag"/></svg> Gatunki
                     </button>
-                    <button class="tab" data-tab="cover">
-                        <i class="fas fa-image"></i> Okładka
+                    <button class="tab" data-tab="batch" role="tab" aria-selected="false">
+                        <svg class="icon"><use href="#i-layers"/></svg> <span class="tab-label">Masowa edycja</span>
                     </button>
-                    <button class="tab" data-tab="batch">
-                        <i class="fas fa-layer-group"></i> Masowa edycja
-                    </button>
-                </div>
+                </nav>
 
-                <!-- Zakładka podstawowa -->
-                <div class="tab-content active" id="basic-tab">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="title"><i class="fas fa-heading"></i> Tytuł utworu</label>
-                            <input type="text" id="title" placeholder="Wpisz tytuł utworu">
-                        </div>
-                        <div class="form-group">
-                            <label for="artist"><i class="fas fa-user"></i> Wykonawca</label>
-                            <input type="text" id="artist" placeholder="Wpisz wykonawcę">
-                        </div>
-                        <div class="form-group">
-                            <label for="album"><i class="fas fa-compact-disc"></i> Album</label>
-                            <input type="text" id="album" placeholder="Wpisz nazwę albumu">
-                        </div>
-                        <div class="form-group">
-                            <label for="year"><i class="fas fa-calendar"></i> Rok wydania</label>
-                            <input type="number" id="year" placeholder="RRRR" min="1900" max="2100">
-                        </div>
-                        <div class="form-group">
-                            <label for="trackNumber"><i class="fas fa-list-ol"></i> Numer utworu</label>
-                            <input type="text" id="trackNumber" placeholder="np. 01, 02">
-                        </div>
-                        <div class="form-group">
-                            <label for="genre"><i class="fas fa-guitar"></i> Główny gatunek</label>
-                            <input type="text" id="genre" placeholder="Wybierz z listy lub wpisz" autocomplete="off">
-                        </div>
-                    </div>
-                </div>
+                <!-- ZAWARTOŚĆ ZAKŁADEK -->
+                <div class="tab-panes">
 
-                <!-- Zakładka zaawansowana -->
-                <div class="tab-content" id="advanced-tab">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="composer"><i class="fas fa-music"></i> Kompozytor</label>
-                            <input type="text" id="composer" placeholder="Wpisz kompozytora">
-                        </div>
-                        <div class="form-group">
-                            <label for="performerInfo"><i class="fas fa-user-tie"></i> Dodatkowy wykonawca</label>
-                            <input type="text" id="performerInfo" placeholder="Dodatkowe informacje o wykonawcy">
-                        </div>
-                        <div class="form-group">
-                            <label for="audioSourceUrl"><i class="fas fa-link"></i> Źródło audio</label>
-                            <input type="text" id="audioSourceUrl" placeholder="URL źródła (np. suno.com)" autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label for="partOfSet"><i class="fas fa-layer-group"></i> Numer płyty</label>
-                            <input type="text" id="partOfSet" placeholder="np. 1/2 dla płyty 1 z 2">
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="lyrics"><i class="fas fa-file-alt"></i> Tekst utworu</label>
-                            <textarea id="lyrics" rows="6" placeholder="Wpisz tekst utworu..."></textarea>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="comment"><i class="fas fa-comment"></i> Komentarz</label>
-                            <textarea id="comment" rows="4" placeholder="Dodaj komentarz..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Zakładka gatunków -->
-                <div class="tab-content" id="genres-tab">
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label for="fullGenres"><i class="fas fa-tags"></i> Wszystkie gatunki (oddziel przecinkami)</label>
-                            <textarea id="fullGenres" rows="4" placeholder="np. Pop, Christmas, Gospel, 20th Century"></textarea>
-                            <small class="hint">Wpisz gatunki oddzielone przecinkami. Pierwszy gatunek będzie głównym. Użyj przycisków poniżej, aby szybko dodać popularne gatunki.</small>
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Szybkie gatunki:</label>
-                            <div class="quick-genres" id="quickGenres">
-                                <!-- Gatunki będą dodane dynamicznie przez JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Zakładka okładki -->
-                <div class="tab-content" id="cover-tab">
-                    <div class="cover-section">
-                        <div class="cover-preview-large">
-                            <div class="cover-placeholder" id="coverPlaceholder">
-                                <i class="fas fa-image"></i>
-                                <p>Brak okładki</p>
-                            </div>
-                            <img id="coverImage" class="hidden" alt="Okładka albumu">
-                        </div>
-                        <div class="cover-controls">
-                            <button class="btn btn-primary" id="selectCover">
-                                <i class="fas fa-folder-open"></i> Wybierz obraz
-                            </button>
-                            <button class="btn btn-danger" id="removeCover">
-                                <i class="fas fa-trash"></i> Usuń okładkę
-                            </button>
-                            <button class="btn btn-info" id="viewCover">
-                                <i class="fas fa-expand"></i> Powiększ
-                            </button>
-                            <button class="btn btn-secondary" id="exportCover" disabled>
-                                <i class="fas fa-download"></i> Eksportuj okładkę
-                            </button>
-                        </div>
-                        <div class="cover-info">
-                            <p class="info-text">
-                                <i class="fas fa-info-circle"></i>
-                                Obsługiwane formaty: JPG, PNG, GIF, BMP, WebP (max 10 MB)
-                            </p>
-                            <p class="info-text">
-                                <i class="fas fa-lightbulb"></i>
-                                Zalecany rozmiar: min. 300x300 pikseli
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Zakładka masowej edycji -->
-                <div class="tab-content" id="batch-tab">
-                    <div class="batch-editor">
-                        <h3><i class="fas fa-copy"></i> Zastosuj do wszystkich wybranych</h3>
-                        <p class="batch-description">Wypełnij pola, które chcesz zastosować do wszystkich plików. Puste pola zostaną pominięte.</p>
+                    <!-- PODSTAWOWE -->
+                    <section class="tab-pane active" id="basic-tab" role="tabpanel">
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label for="batch-artist"><i class="fas fa-user"></i> Wykonawca</label>
-                                <input type="text" id="batch-artist" placeholder="Zastąp wykonawcę">
+                            <div class="field field-full">
+                                <label for="title"><svg class="icon"><use href="#i-type"/></svg> Tytuł utworu</label>
+                                <input type="text" id="title" placeholder="Wpisz tytuł utworu" autocomplete="off">
                             </div>
-                            <div class="form-group">
-                                <label for="batch-album"><i class="fas fa-compact-disc"></i> Album</label>
-                                <input type="text" id="batch-album" placeholder="Zastąp album">
+                            <div class="field">
+                                <label for="artist"><svg class="icon"><use href="#i-user"/></svg> Wykonawca</label>
+                                <input type="text" id="artist" placeholder="Wpisz wykonawcę" autocomplete="off">
                             </div>
-                            <div class="form-group">
-                                <label for="batch-genre"><i class="fas fa-guitar"></i> Gatunek</label>
-                                <input type="text" id="batch-genre" placeholder="Zastąp gatunek" autocomplete="off">
+                            <div class="field">
+                                <label for="album"><svg class="icon"><use href="#i-disc"/></svg> Album</label>
+                                <input type="text" id="album" placeholder="Wpisz nazwę albumu" autocomplete="off">
                             </div>
-                            <div class="form-group">
-                                <label for="batch-year"><i class="fas fa-calendar"></i> Rok</label>
-                                <input type="number" id="batch-year" placeholder="Zastąp rok" min="1900" max="2100">
+                            <div class="field field-half">
+                                <label for="year"><svg class="icon"><use href="#i-calendar"/></svg> Rok wydania</label>
+                                <input type="number" id="year" placeholder="RRRR" min="1900" max="2100">
                             </div>
-                            <div class="form-group">
-                                <label for="batch-composer"><i class="fas fa-music"></i> Kompozytor</label>
-                                <input type="text" id="batch-composer" placeholder="Zastąp kompozytora">
+                            <div class="field field-half">
+                                <label for="trackNumber"><svg class="icon"><use href="#i-hash"/></svg> Numer utworu</label>
+                                <input type="text" id="trackNumber" placeholder="np. 01" inputmode="numeric">
                             </div>
-                            <div class="form-group">
-                                <label for="batch-performerInfo"><i class="fas fa-user-tie"></i> Dodatkowy wykonawca</label>
-                                <input type="text" id="batch-performerInfo" placeholder="Zastąp dodatkowego wykonawcę">
-                            </div>
-                            <div class="form-group">
-                                <label for="batch-audioSourceUrl"><i class="fas fa-link"></i> Źródło audio</label>
-                                <input type="text" id="batch-audioSourceUrl" placeholder="Zastąp źródło audio" autocomplete="off">
+                            <div class="field field-full">
+                                <label><svg class="icon"><use href="#i-tag"/></svg> Gatunki <span class="label-hint">pierwszy = główny</span></label>
+                                <div class="chip-input" id="chipInput">
+                                    <div class="chips" id="chipsContainer"></div>
+                                    <input type="text" id="genreChipInput" class="chip-text" placeholder="Wpisz lub wybierz gatunek…" autocomplete="off" spellcheck="false">
+                                </div>
+                                <div class="chip-dropdown" id="chipDropdown" hidden></div>
                             </div>
                         </div>
-                        <button class="btn btn-warning btn-large" id="applyBatch">
-                            <i class="fas fa-bolt"></i> Zastosuj zmiany do wszystkich plików
-                        </button>
-                    </div>
+                    </section>
+
+                    <!-- ZAANSOWANE -->
+                    <section class="tab-pane" id="advanced-tab" role="tabpanel">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="composer"><svg class="icon"><use href="#i-pen"/></svg> Kompozytor</label>
+                                <input type="text" id="composer" placeholder="Wpisz kompozytora" autocomplete="off">
+                            </div>
+                            <div class="field">
+                                <label for="performerInfo"><svg class="icon"><use href="#i-users"/></svg> Dodatkowy wykonawca</label>
+                                <input type="text" id="performerInfo" placeholder="Dodatkowe informacje o wykonawcy" autocomplete="off">
+                            </div>
+                            <div class="field">
+                                <label for="audioSourceUrl"><svg class="icon"><use href="#i-link"/></svg> Źródło audio</label>
+                                <input type="text" id="audioSourceUrl" placeholder="URL źródła (np. suno.com)" autocomplete="off" spellcheck="false">
+                            </div>
+                            <div class="field">
+                                <label for="partOfSet"><svg class="icon"><use href="#i-layers"/></svg> Numer płyty</label>
+                                <input type="text" id="partOfSet" placeholder="np. 1/2 - płyta 1 z 2" autocomplete="off">
+                            </div>
+                            <div class="field field-full">
+                                <label for="lyrics"><svg class="icon"><use href="#i-file-text"/></svg> Tekst utworu</label>
+                                <textarea id="lyrics" rows="9" placeholder="Wpisz tekst utworu…" spellcheck="false"></textarea>
+                            </div>
+                            <div class="field field-full">
+                                <label for="comment"><svg class="icon"><use href="#i-message"/></svg> Komentarz</label>
+                                <textarea id="comment" rows="4" placeholder="Dodaj komentarz…" spellcheck="false"></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- GATUNKI: BIBLIOTEKA -->
+                    <section class="tab-pane" id="genres-tab" role="tabpanel">
+                        <div class="genre-panel">
+                            <div class="genre-current">
+                                <span class="genre-current-label">Gatunki tego utworu:</span>
+                                <div class="chips chips-readonly" id="genresCurrent"></div>
+                                <span class="genre-current-empty" id="genresCurrentEmpty">brak - dodaj z listy poniżej</span>
+                            </div>
+
+                            <div class="genre-lib-head">
+                                <div class="search-box">
+                                    <svg class="icon"><use href="#i-search"/></svg>
+                                    <input type="text" id="genreSearch" placeholder="Filtruj bibliotekę gatunków…" autocomplete="off" spellcheck="false">
+                                </div>
+                                <span class="genre-count" id="genreCount"></span>
+                            </div>
+
+                            <div class="genre-quick-label">Szybki wybór:</div>
+                            <div class="genre-quick" id="quickGenres"></div>
+
+                            <div class="genre-quick-label">Wszystkie gatunki <span class="label-hint">(kliknij, aby przełączyć)</span>:</div>
+                            <div class="genre-grid" id="genreGrid"></div>
+                        </div>
+                    </section>
+
+                    <!-- MASOWA EDYCJA -->
+                    <section class="tab-pane" id="batch-tab" role="tabpanel">
+                        <div class="batch-panel">
+                            <div class="batch-banner">
+                                <svg class="icon"><use href="#i-alert"/></svg>
+                                <div>
+                                    <strong>Zmiany zapisują się od razu do plików.</strong>
+                                    Wypełnij tylko te pola, które chcesz nadpisać - puste pola zostaną pominięte.
+                                    Przed masową edycją warto zrobić kopię zapasową plików.
+                                </div>
+                            </div>
+
+                            <div class="batch-summary" id="batchSummary" hidden>
+                                <span class="batch-summary-label">Do nadpisania:</span>
+                                <div class="batch-summary-chips" id="batchSummaryChips"></div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="batch-artist"><svg class="icon"><use href="#i-user"/></svg> Wykonawca</label>
+                                    <input type="text" id="batch-artist" placeholder="Zastąp wykonawcę" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="batch-album"><svg class="icon"><use href="#i-disc"/></svg> Album</label>
+                                    <input type="text" id="batch-album" placeholder="Zastąp album" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="batch-genre"><svg class="icon"><use href="#i-tag"/></svg> Gatunek</label>
+                                    <input type="text" id="batch-genre" placeholder="Zastąp gatunek" autocomplete="off" spellcheck="false">
+                                </div>
+                                <div class="field">
+                                    <label for="batch-year"><svg class="icon"><use href="#i-calendar"/></svg> Rok</label>
+                                    <input type="number" id="batch-year" placeholder="Zastąp rok" min="1900" max="2100">
+                                </div>
+                                <div class="field">
+                                    <label for="batch-composer"><svg class="icon"><use href="#i-pen"/></svg> Kompozytor</label>
+                                    <input type="text" id="batch-composer" placeholder="Zastąp kompozytora" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="batch-performerInfo"><svg class="icon"><use href="#i-users"/></svg> Dodatkowy wykonawca</label>
+                                    <input type="text" id="batch-performerInfo" placeholder="Zastąp dodatkowego wykonawcę" autocomplete="off">
+                                </div>
+                                <div class="field field-full">
+                                    <label for="batch-audioSourceUrl"><svg class="icon"><use href="#i-link"/></svg> Źródło audio</label>
+                                    <input type="text" id="batch-audioSourceUrl" placeholder="Zastąp źródło audio" autocomplete="off" spellcheck="false">
+                                </div>
+                            </div>
+
+                            <div class="batch-footer">
+                                <button class="btn btn-subtle" id="batchClear">
+                                    <svg class="icon"><use href="#i-eraser"/></svg>
+                                    <span class="btn-label">Wyczyść pola</span>
+                                </button>
+                                <button class="btn btn-primary btn-lg" id="applyBatch">
+                                    <svg class="icon"><use href="#i-bolt"/></svg>
+                                    <svg class="icon icon-spin btn-spinner"><use href="#i-loader"/></svg>
+                                    <span class="btn-label">Zastosuj do wszystkich plików</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-            </div>
-        </div>
-
-        <!-- Stopka -->
-        <footer class="footer">
-            <div class="status-bar">
-                <span id="statusMessage">Gotowy do pracy</span>
-                <span id="fileCount">0 plików</span>
-            </div>
-        </footer>
+            </section>
+        </main>
     </div>
 
-    <!-- Modal z powiadomieniem -->
-    <div id="notificationModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Powiadomienie</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="modalMessage"></p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="modalClose">OK</button>
-            </div>
+    <!-- ===== PASEK STANU ===== -->
+    <footer class="statusbar">
+        <div class="status-left">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusMessage">Gotowy do pracy</span>
+        </div>
+        <div class="status-right">
+            <span id="fileCountStatus">0 plików</span>
+            <span class="status-sep">•</span>
+            <span class="status-version">MP3 Tagger v1.2.0</span>
+        </div>
+    </footer>
+</div>
+
+<!-- ===== NAKŁADKA DRAG & DROP ===== -->
+<div class="drop-overlay" id="dropOverlay" hidden>
+    <div class="drop-card">
+        <div class="drop-icon">
+            <svg class="icon"><use href="#i-folder-open"/></svg>
+        </div>
+        <h3>Upuść pliki audio</h3>
+        <p>Pliki MP3</p>
+    </div>
+</div>
+
+<!-- ===== MODAL: POWIADOMIENIE ===== -->
+<div class="modal" id="notificationModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="modalTitle">Powiadomienie</h3>
+            <button class="icon-btn modal-close" aria-label="Zamknij"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="modal-body"><p id="modalMessage"></p></div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="modalClose"><span class="btn-label">OK</span></button>
         </div>
     </div>
+</div>
 
-    <!-- Modal z powiększoną okładką -->
-    <div id="coverModal" class="modal">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3>Okładka albumu</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <img id="fullCoverImage" class="full-cover" alt="Pełna okładka">
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="coverModalClose">Zamknij</button>
-            </div>
+<!-- ===== MODAL: POTWIERDZENIE ===== -->
+<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-backdrop" data-close-cancel></div>
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="confirmTitle">Potwierdź</h3>
+            <button class="icon-btn modal-close" aria-label="Anuluj"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="modal-body"><p id="confirmMessage"></p></div>
+        <div class="modal-footer">
+            <button class="btn btn-subtle" id="confirmCancel"><span class="btn-label">Anuluj</span></button>
+            <button class="btn btn-danger" id="confirmOk"><span class="btn-label" id="confirmOkLabel">Zatwierdź</span></button>
         </div>
     </div>
+</div>
 
-    <!-- Toast powiadomienia -->
-    <div id="toastContainer" class="toast-container"></div>
+<!-- ===== MODAL: SKRÓTY KLAWISZOWE ===== -->
+<div class="modal" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="shortcutsTitle"><svg class="icon"><use href="#i-keyboard"/></svg> Skróty klawiszowe</h3>
+            <button class="icon-btn modal-close" aria-label="Zamknij"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="modal-body">
+            <table class="shortcuts-table">
+                <tbody>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>O</kbd></td><td>Dodaj pliki</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Zapisz tagi bieżącego pliku</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></td><td>Zapisz wszystkie zmiany</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>F</kbd></td><td>Znajdź na liście plików</td></tr>
+                    <tr><td><kbd>Esc</kbd></td><td>Zamknij okno / podpowiedzi</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary modal-close"><span class="btn-label">Zamknij</span></button>
+        </div>
+    </div>
+</div>
 
-    <script src="genres.js"></script>
-    <script src="renderer.js"></script>
+<!-- ===== MODAL: OKŁADKA (POWIĘKSZENIE) ===== -->
+<div class="modal modal-cover" id="coverModal" role="dialog" aria-modal="true" aria-label="Okładka albumu">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card modal-card-cover">
+        <div class="modal-header">
+            <h3><svg class="icon"><use href="#i-image"/></svg> Okładka albumu</h3>
+            <button class="icon-btn modal-close" aria-label="Zamknij"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="modal-body modal-body-cover">
+            <img id="fullCoverImage" alt="Okładka w pełnym rozmiarze">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="coverModalClose"><span class="btn-label">Zamknij</span></button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: WYSZUKIWANIE OKŁADKI ONLINE ===== -->
+<div class="modal modal-cover-search" id="coverSearchModal" role="dialog" aria-modal="true" aria-labelledby="coverSearchTitle">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card modal-card-search">
+        <div class="modal-header">
+            <h3 id="coverSearchTitle"><svg class="icon"><use href="#i-globe"/></svg> Wyszukaj okładkę w Internecie</h3>
+            <button class="icon-btn modal-close" aria-label="Zamknij"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="modal-body modal-body-search">
+            <div class="cs-search-row">
+                <div class="cs-input-wrap">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" id="coverSearchInput" placeholder="Wykonawca i tytuł utworu…" autocomplete="off" spellcheck="false">
+                </div>
+                <button class="btn btn-primary" id="coverSearchBtn">
+                    <svg class="icon btn-spinner"><use href="#i-loader"/></svg>
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <span class="btn-label">Szukaj</span>
+                </button>
+            </div>
+
+            <label class="cs-apply-tags" for="csApplyTags">
+                <input type="checkbox" id="csApplyTags">
+                <span>Przy wyborze ustaw także tagi z wyniku <b>(tytuł, wykonawca, album, rok; kompozytor, jeśli dostępny)</b></span>
+            </label>
+
+            <div class="cs-status" id="coverSearchStatus" hidden></div>
+            <div class="cs-grid" id="coverSearchGrid"></div>
+
+            <p class="cs-footer">
+                Darmowe źródła: <b>Apple iTunes Search</b> i <b>Deezer API</b> - bez kluczy i logowania.
+                Zapytania i pobieranie odbywa się w tle aplikacji i trafiają wyłącznie do serwerów źródłowych.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TOASTY ===== -->
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+<script src="genres.js"></script>
+<script src="renderer.js"></script>
 </body>
 </html>

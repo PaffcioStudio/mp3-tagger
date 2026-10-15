@@ -5,6 +5,7 @@ module.exports = function(ipcMain, ID3, fs, path) {
     // Pomocnik: sprawdź czy plik jest dostępny i ma sensowny rozmiar
     function validateFilePath(filePath) {
         if (!filePath || typeof filePath !== 'string') return 'Nieprawidłowa ścieżka pliku.';
+        if (path.extname(filePath).toLowerCase() !== '.mp3') return 'Obsługiwane są wyłącznie pliki MP3. Ten format nie zostanie zmieniony.';
         if (!fsSync.existsSync(filePath)) return `Plik nie istnieje: ${filePath}`;
         const stat = fsSync.statSync(filePath);
         if (!stat.isFile()) return 'Ścieżka nie wskazuje na plik.';
@@ -31,7 +32,7 @@ module.exports = function(ipcMain, ID3, fs, path) {
             // Parsowanie numeru ścieżki
             let trackNumber = '';
             if (tags.trackNumber) {
-                trackNumber = String(tags.trackNumber).split('/')[0].trim();
+                trackNumber = String(tags.trackNumber).trim();
             }
             
             // Parsowanie roku
@@ -173,38 +174,44 @@ module.exports = function(ipcMain, ID3, fs, path) {
                 }
             }
             
-            const tagData = {
-                title: tags.title || '',
-                artist: tags.artist || '',
-                album: tags.album || '',
-                year: tags.year || '',
-                trackNumber: tags.trackNumber ? String(tags.trackNumber) : '',
-                composer: tags.composer || '',
-                genre: tags.genre || '',
-                performerInfo: tags.performerInfo || '',
-                audioSourceUrl: tags.audioSourceUrl || '',
-                partOfSet: tags.partOfSet || ''
-            };
+            // Zachowaj również metadane, których formularz nie edytuje.
+            const existing = ID3.read(filePath);
+            if (!existing || existing instanceof Error) throw new Error('Nie można odczytać istniejących tagów. Zapis anulowany.');
+            const tagData = { ...existing.raw };
+            for (const key of ['title', 'artist', 'album', 'year', 'trackNumber', 'composer',
+                'genre', 'performerInfo', 'audioSourceUrl', 'partOfSet']) {
+                if (Object.hasOwn(tags, key)) tagData[key] = String(tags[key] ?? '');
+            }
             
             if (imageData !== undefined) {
                 tagData.image = imageData;
+            } else if (tags.coverData === null) {
+                delete tagData.APIC;
             }
             
-            if (tags.lyrics && tags.lyrics.trim()) {
-                tagData.unsynchronisedLyrics = { language: 'pol', text: tags.lyrics };
+            if (Object.hasOwn(tags, 'lyrics')) {
+                delete tagData.USLT;
+                if (tags.lyrics && tags.lyrics.trim()) {
+                    tagData.unsynchronisedLyrics = {
+                        language: existing.unsynchronisedLyrics?.language || 'pol', text: tags.lyrics
+                    };
+                }
             }
             
-            if (tags.comment && tags.comment.trim()) {
-                tagData.comment = { language: 'pol', text: tags.comment };
+            if (Object.hasOwn(tags, 'comment')) {
+                delete tagData.COMM;
+                if (tags.comment && tags.comment.trim()) {
+                    tagData.comment = { language: existing.comment?.language || 'pol', text: tags.comment };
+                }
             }
             
             const success = ID3.write(tagData, filePath);
             
-            if (success) {
+            if (success === true) {
                 console.log('✓ Tagi zapisane pomyślnie:', path.basename(filePath));
                 return { success: true };
             } else {
-                return { success: false, error: 'Biblioteka ID3 zwróciła błąd zapisu.' };
+                return { success: false, error: success instanceof Error ? success.message : 'Biblioteka ID3 zwróciła błąd zapisu.' };
             }
         } catch (error) {
             console.error('✗ BŁĄD zapisu tagów:', error.message);
@@ -239,18 +246,19 @@ module.exports = function(ipcMain, ID3, fs, path) {
                     continue;
                 }
 
-                const existingTags = ID3.read(filePath) || {};
-                const updatedTags = { ...existingTags, ...tags };
+                const existingTags = ID3.read(filePath);
+                if (!existingTags || existingTags instanceof Error) throw new Error('Nie można odczytać istniejących tagów. Zapis anulowany.');
+                const updatedTags = { ...existingTags.raw, ...tags };
                 const success = ID3.write(updatedTags, filePath);
                 
                 results.push({
                     file: path.basename(filePath),
-                    success: !!success,
-                    error: success ? undefined : 'Błąd zapisu biblioteki ID3',
+                    success: success === true,
+                    error: success === true ? undefined : (success instanceof Error ? success.message : 'Błąd zapisu biblioteki ID3'),
                     path: filePath
                 });
                 
-                console.log(success ? '✓' : '✗', path.basename(filePath));
+                console.log(success === true ? '✓' : '✗', path.basename(filePath));
             } catch (error) {
                 console.error('Błąd dla', path.basename(filePath), ':', error.message);
                 results.push({

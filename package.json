@@ -1,6 +1,6 @@
 {
   "name": "mp3-tagger",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "Zaawansowany edytor tagów MP3 z polskim interfejsem",
   "homepage": "https://github.com/PaffcioStudio/mp3-tagger",
   "main": "src/main.js",
@@ -11,7 +11,9 @@
     "build:win": "electron-builder --win --x64",
     "build:mac": "electron-builder --mac",
     "pack": "electron-builder --dir",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "test": "node --test tests/*.test.cjs",
+    "test:ui": "node tests/ui-smoke.cjs"
   },
   "keywords": [
     "mp3",
@@ -31,8 +33,8 @@
     "node-id3": "^0.2.6"
   },
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.13.3"
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3"
   },
   "build": {
     "appId": "com.mp3tagger.app",
@@ -63,13 +65,20 @@
         "--no-sandbox"
       ],
       "desktop": {
-        "Icon": "mp3-tagger",
-        "Name": "MP3 Tagger",
-        "Type": "Application",
-        "Categories": "AudioVideo;Audio;AudioVideoEditing;",
-        "MimeType": "audio/mpeg;audio/mp3;audio/flac;audio/ogg;audio/x-flac;audio/aac;audio/m4a;audio/mp4;audio/x-m4a;audio/wav;audio/x-wav;audio/wma;audio/x-ms-wma;",
-        "StartupWMClass": "MP3 Tagger"
-      }
+        "entry": {
+          "Icon": "mp3-tagger",
+          "Name": "MP3 Tagger",
+          "Type": "Application",
+          "Categories": "AudioVideo;Audio;AudioVideoEditing;",
+          "MimeType": "audio/mpeg;audio/mp3;",
+          "StartupWMClass": "mp3-tagger"
+        }
+      },
+      "syncDesktopName": true,
+      "mimeTypes": [
+        "audio/mpeg",
+        "audio/mp3"
+      ]
     },
     "deb": {
       "depends": [
@@ -86,17 +95,12 @@
         "https://github.com/PaffcioStudio/mp3-tagger"
       ]
     },
-    "snap": {
-      "grade": "stable",
-      "confinement": "classic"
-    },
     "win": {
       "target": [
         "nsis",
         "portable"
       ],
-      "icon": "build/icon.ico",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "icon": "build/icon.ico"
     },
     "mac": {
       "target": [
@@ -115,7 +119,21 @@
         ]
       }
     ],
-    "copyright": "Copyright © 2025 Paweł Potrykus (Paffcio)"
+    "copyright": "Copyright © 2025 Paweł Potrykus (Paffcio)",
+    "snapcraft": {
+      "base": "core22",
+      "core22": {
+        "grade": "stable",
+        "confinement": "classic"
+      }
+    },
+    "nsis": {
+      "artifactName": "${productName}-${version}-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-portable.${ext}"
+    },
+    "afterPack": "build/after-pack.cjs"
   },
   "bugs": {
     "url": "https://github.com/PaffcioStudio/mp3-tagger/issues"
@@ -123,5 +141,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/PaffcioStudio/mp3-tagger.git"
+  },
+  "desktopName": "mp3-tagger.desktop",
+  "overrides": {
+    "global-agent": "^4.1.3"
   }
 }
